@@ -9,9 +9,13 @@ import {
 import { formatCurrency } from "@/utils/format";
 
 export default function AnalyticsPage() {
-  const [analytics, setAnalytics] = useState<Awaited<ReturnType<typeof getAnalytics>>>([]);
+  const [analytics, setAnalytics] = useState<
+    Awaited<ReturnType<typeof getAnalytics>>
+  >([]);
   const [insights, setInsights] = useState<string[]>([]);
-  const [summary, setSummary] = useState<Awaited<ReturnType<typeof getEmployeeSummary>> | null>(null);
+  const [summary, setSummary] = useState<Awaited<
+    ReturnType<typeof getEmployeeSummary>
+  > | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -30,7 +34,7 @@ export default function AnalyticsPage() {
   }, []);
 
   if (!summary) {
-    return <div className="p-8 text-sm text-slate-500">Loading analytics…</div>;
+    return <div className="p-8 text-slate-500 text-sm">Loading analytics…</div>;
   }
 
   return (

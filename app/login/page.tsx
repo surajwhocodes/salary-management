@@ -31,25 +31,43 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-6 py-12">
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">Northstar HR</p>
-        <h1 className="mt-2 text-3xl font-semibold">Sign in</h1>
-        <p className="mt-2 text-sm text-slate-600">Use your Supabase-backed HR credentials to continue.</p>
+    <main className="flex flex-col justify-center mx-auto px-6 py-12 max-w-md min-h-[70vh]">
+      <div className="bg-white shadow-sm p-8 border border-slate-200 rounded-2xl">
+        <p className="font-medium text-slate-500 text-sm uppercase tracking-[0.2em]">
+          Northstar HR
+        </p>
+        <h1 className="mt-2 font-semibold text-3xl">Sign in</h1>
+        <p className="mt-2 text-slate-600 text-sm">
+          Use your Supabase-backed HR credentials to continue.
+        </p>
 
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-sm font-medium text-slate-700">
+        <form className="space-y-4 mt-6" onSubmit={handleSubmit}>
+          <label className="block font-medium text-slate-700 text-sm">
             Email
-            <input name="email" type="email" required className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+            <input
+              name="email"
+              type="email"
+              required
+              className="mt-1 px-3 py-2 border border-slate-300 rounded-lg w-full"
+            />
           </label>
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="block font-medium text-slate-700 text-sm">
             Password
-            <input name="password" type="password" required className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+            <input
+              name="password"
+              type="password"
+              required
+              className="mt-1 px-3 py-2 border border-slate-300 rounded-lg w-full"
+            />
           </label>
 
-          {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+          {error ? <p className="text-rose-600 text-sm">{error}</p> : null}
 
-          <button type="submit" disabled={loading} className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-70">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-slate-900 disabled:opacity-70 px-4 py-2 rounded-lg w-full font-medium text-white text-sm"
+          >
             {loading ? "Signing in..." : "Continue"}
           </button>
         </form>

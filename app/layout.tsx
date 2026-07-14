@@ -32,7 +32,10 @@ export default function RootLayout({
                 <Link href="/account" className="hover:text-slate-950">
                   Account
                 </Link>
-                <Link href="/login" className="rounded-lg bg-slate-900 px-3 py-2 text-white hover:bg-slate-800">
+                <Link
+                  href="/login"
+                  className="bg-slate-900 hover:bg-slate-800 px-3 py-2 rounded-lg text-white"
+                >
                   Sign in
                 </Link>
               </div>

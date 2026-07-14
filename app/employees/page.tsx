@@ -6,7 +6,9 @@ import { listEmployees } from "@/services/employeeService";
 import { EmployeeViews } from "@/features/employee-views";
 
 export default function EmployeesPage() {
-  const [employees, setEmployees] = useState<Awaited<ReturnType<typeof listEmployees>>>([]);
+  const [employees, setEmployees] = useState<
+    Awaited<ReturnType<typeof listEmployees>>
+  >([]);
 
   useEffect(() => {
     async function load() {

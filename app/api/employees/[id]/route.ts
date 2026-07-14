@@ -4,7 +4,7 @@ import { employeeSchema } from "@/lib/validation";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const employee = getEmployee(id);
+    const employee = await getEmployee(id);
 
     if (!employee) {
         return NextResponse.json({ success: false, error: "Employee not found" }, { status: 404 });
@@ -18,7 +18,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         const { id } = await params;
         const payload = await request.json();
         const employee = employeeSchema.partial().parse(payload);
-        const updated = updateEmployee(id, employee);
+        const updated = await updateEmployee(id, employee);
 
         if (!updated) {
             return NextResponse.json({ success: false, error: "Employee not found" }, { status: 404 });
@@ -32,7 +32,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const deleted = deleteEmployee(id);
+    const deleted = await deleteEmployee(id);
 
     if (!deleted) {
         return NextResponse.json({ success: false, error: "Employee not found" }, { status: 404 });

@@ -26,8 +26,12 @@ import {
 const palette = ["#2563eb", "#14b8a6", "#f59e0b", "#8b5cf6", "#ef4444"];
 
 export function DashboardShell() {
-  const [employees, setEmployees] = useState<Awaited<ReturnType<typeof listEmployees>>>([]);
-  const [summary, setSummary] = useState<Awaited<ReturnType<typeof getEmployeeSummary>> | null>(null);
+  const [employees, setEmployees] = useState<
+    Awaited<ReturnType<typeof listEmployees>>
+  >([]);
+  const [summary, setSummary] = useState<Awaited<
+    ReturnType<typeof getEmployeeSummary>
+  > | null>(null);
   const [insights, setInsights] = useState<string[]>([]);
 
   useEffect(() => {
@@ -47,7 +51,9 @@ export function DashboardShell() {
   }, []);
 
   if (!summary) {
-    return <div className="text-sm text-slate-500">Loading payroll insights…</div>;
+    return (
+      <div className="text-slate-500 text-sm">Loading payroll insights…</div>
+    );
   }
 
   return (

@@ -3,9 +3,11 @@ import { createEmployee, listEmployees } from "@/services/employeeService";
 import { employeeSchema } from "@/lib/validation";
 
 export async function GET() {
+    const employees = await listEmployees();
+
     return NextResponse.json({
         success: true,
-        data: listEmployees(),
+        data: employees,
     });
 }
 
@@ -13,7 +15,7 @@ export async function POST(request: Request) {
     try {
         const payload = await request.json();
         const employee = employeeSchema.parse(payload);
-        const created = createEmployee(employee);
+        const created = await createEmployee(employee);
 
         return NextResponse.json(
             { success: true, data: created },
