@@ -1,118 +1,41 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { formatCurrency } from "@/utils/format";
+import { employeeApi } from "@/lib/client-api";
 import type { Employee } from "@/types/employee";
 
-interface EmployeeViewsProps {
-  readonly employees: Employee[];
+interface EmployeeViewsProps { readonly employees: Employee[]; readonly onRefresh: () => void; }
+
+function employeeDraft(employee?: Employee): Omit<Employee, "id"> {
+  if (employee) {
+    const draft = { ...employee };
+    Reflect.deleteProperty(draft, "id");
+    return draft;
+  }
+  return { employeeId: `NST-${Date.now().toString().slice(-5)}`, firstName: "", lastName: "", email: "", department: "Engineering", country: "United States", currency: "USD", joiningDate: new Date().toISOString().slice(0, 10), employmentType: "Full-Time", status: "Active", baseSalary: 80000, bonus: 8000, allowance: 2400, tax: 18000, netSalary: 72400, manager: "Mina Patel", lastUpdated: new Date().toISOString().slice(0, 10) };
 }
 
-export function EmployeeViews({ employees }: EmployeeViewsProps) {
-  const [query, setQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const pageSize = 6;
+function EmployeeForm({ employee, onClose, onSaved }: { employee?: Employee; onClose: () => void; onSaved: () => void }) {
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const draft = employeeDraft(employee);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setSaving(true); setError(null);
+    const values = new FormData(event.currentTarget);
+    const number = (name: string) => Number(values.get(name));
+    const input = { ...draft, employeeId: String(values.get("employeeId")), firstName: String(values.get("firstName")), lastName: String(values.get("lastName")), email: String(values.get("email")), department: String(values.get("department")), country: String(values.get("country")), currency: String(values.get("currency")), baseSalary: number("baseSalary"), bonus: number("bonus"), allowance: number("allowance"), tax: number("tax"), netSalary: number("netSalary"), manager: String(values.get("manager")), lastUpdated: new Date().toISOString().slice(0, 10) };
+    try { if (employee) await employeeApi.update(employee.id, input); else await employeeApi.create(input); onSaved(); onClose(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to save employee"); } finally { setSaving(false); }
+  }
+  const field = "mt-1 px-3 py-2 border border-slate-300 rounded-lg w-full";
+  return <div className="fixed inset-0 z-20 flex justify-center items-start bg-slate-950/40 p-4 overflow-y-auto"><form onSubmit={submit} className="bg-white shadow-xl my-8 p-6 rounded-2xl w-full max-w-2xl"><div className="flex justify-between items-center mb-5"><div><h2 className="font-semibold text-xl">{employee ? "Edit employee" : "Add employee"}</h2><p className="text-slate-500 text-sm">Compensation changes are retained in the audit trail when Supabase is connected.</p></div><button type="button" onClick={onClose} aria-label="Close form" className="text-slate-500">✕</button></div><div className="gap-4 grid sm:grid-cols-2">{[["employeeId", "Employee ID", "text"], ["firstName", "First name", "text"], ["lastName", "Last name", "text"], ["email", "Email", "email"], ["department", "Department", "text"], ["country", "Country", "text"], ["currency", "Currency", "text"], ["manager", "Manager", "text"], ["baseSalary", "Base salary", "number"], ["bonus", "Bonus", "number"], ["allowance", "Allowance", "number"], ["tax", "Tax", "number"], ["netSalary", "Net salary", "number"]].map(([name, label, type]) => <label key={name} className="font-medium text-slate-700 text-sm">{label}<input required name={name} type={type} defaultValue={String(draft[name as keyof typeof draft])} className={field} /></label>)}</div>{error ? <p role="alert" className="mt-4 text-rose-600 text-sm">{error}</p> : null}<div className="flex justify-end gap-3 mt-6"><button type="button" onClick={onClose} className="px-4 py-2 border rounded-lg text-sm">Cancel</button><button disabled={saving} className="bg-slate-900 px-4 py-2 rounded-lg text-white text-sm">{saving ? "Saving…" : "Save employee"}</button></div></form></div>;
+}
 
-  const filtered = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) {
-      return employees;
-    }
-
-    return employees.filter((employee) => {
-      const haystack =
-        `${employee.firstName} ${employee.lastName} ${employee.department} ${employee.country} ${employee.email}`.toLowerCase();
-      return haystack.includes(normalized);
-    });
-  }, [employees, query]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const currentPage = Math.min(page, totalPages);
-  const paged = filtered.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  );
-
-  return (
-    <div className="space-y-5">
-      <div className="flex md:flex-row flex-col md:justify-between md:items-center gap-4">
-        <input
-          aria-label="Search employees"
-          className="px-3 py-2 border border-slate-300 rounded-lg w-full md:max-w-sm"
-          placeholder="Search employee, department, or country"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-            setPage(1);
-          }}
-        />
-        <Link
-          href="/analytics"
-          className="font-medium text-slate-600 hover:text-slate-900 text-sm"
-        >
-          View insights →
-        </Link>
-      </div>
-
-      <div className="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
-        <table className="divide-y divide-slate-200 min-w-full text-sm">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-4 py-3 font-semibold text-left">Employee</th>
-              <th className="px-4 py-3 font-semibold text-left">Department</th>
-              <th className="px-4 py-3 font-semibold text-left">Country</th>
-              <th className="px-4 py-3 font-semibold text-left">Net Salary</th>
-              <th className="px-4 py-3 font-semibold text-left">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {paged.map((employee) => (
-              <tr key={employee.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3">
-                  <p className="font-medium">
-                    {employee.firstName} {employee.lastName}
-                  </p>
-                  <p className="text-slate-500 text-xs">{employee.email}</p>
-                </td>
-                <td className="px-4 py-3">{employee.department}</td>
-                <td className="px-4 py-3">{employee.country}</td>
-                <td className="px-4 py-3">
-                  {formatCurrency(employee.netSalary, employee.currency)}
-                </td>
-                <td className="px-4 py-3">{employee.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex justify-between items-center">
-        <p className="text-slate-500 text-sm">
-          Showing {paged.length} of {filtered.length} employees
-        </p>
-        <div className="flex items-center gap-2">
-          <button
-            aria-label="Previous page"
-            className="disabled:opacity-50 px-3 py-2 border rounded text-sm"
-            disabled={currentPage <= 1}
-            onClick={() => setPage((value) => Math.max(1, value - 1))}
-          >
-            Prev
-          </button>
-          <span className="font-medium text-sm">
-            Page {currentPage} / {totalPages}
-          </span>
-          <button
-            aria-label="Next page"
-            className="disabled:opacity-50 px-3 py-2 border rounded text-sm"
-            disabled={currentPage >= totalPages}
-            onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
-          >
-            Next
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+export function EmployeeViews({ employees, onRefresh }: EmployeeViewsProps) {
+  const [query, setQuery] = useState(""); const [page, setPage] = useState(1); const [formEmployee, setFormEmployee] = useState<Employee | null | undefined>(undefined); const [removing, setRemoving] = useState<string | null>(null); const pageSize = 8;
+  const filtered = useMemo(() => { const normalized = query.trim().toLowerCase(); return !normalized ? employees : employees.filter((employee) => `${employee.firstName} ${employee.lastName} ${employee.department} ${employee.country} ${employee.email}`.toLowerCase().includes(normalized)); }, [employees, query]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize)); const currentPage = Math.min(page, totalPages); const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  function exportCsv() { const headers = ["Employee ID", "Name", "Department", "Country", "Net salary", "Status"]; const rows = filtered.map((item) => [item.employeeId, `${item.firstName} ${item.lastName}`, item.department, item.country, item.netSalary, item.status]); const url = URL.createObjectURL(new Blob([[headers, ...rows].map((row) => row.join(",")).join("\n")], { type: "text/csv" })); const link = document.createElement("a"); link.href = url; link.download = "northstar-employees.csv"; link.click(); URL.revokeObjectURL(url); }
+  async function remove(employee: Employee) { if (!window.confirm(`Remove ${employee.firstName} ${employee.lastName}?`)) return; setRemoving(employee.id); try { await employeeApi.remove(employee.id); onRefresh(); } finally { setRemoving(null); } }
+  return <div className="space-y-5">{formEmployee !== undefined ? <EmployeeForm employee={formEmployee ?? undefined} onClose={() => setFormEmployee(undefined)} onSaved={onRefresh} /> : null}<div className="flex md:flex-row flex-col md:justify-between md:items-center gap-4"><input aria-label="Search employees" className="px-3 py-2 border border-slate-300 rounded-lg w-full md:max-w-sm" placeholder="Search employee, department, or country" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }} /><div className="flex gap-2"><button onClick={exportCsv} className="px-3 py-2 border rounded-lg text-sm">Export CSV</button><button onClick={() => setFormEmployee(null)} className="bg-slate-900 px-3 py-2 rounded-lg text-white text-sm">Add employee</button></div></div><div className="border border-slate-200 rounded-xl overflow-x-auto"><table className="divide-y divide-slate-200 min-w-full text-sm"><thead className="bg-slate-50"><tr>{["Employee", "Department", "Country", "Net salary", "Status", ""].map((label) => <th key={label} className="px-4 py-3 font-semibold text-left">{label}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{paged.map((employee) => <tr key={employee.id} className="hover:bg-slate-50"><td className="px-4 py-3"><p className="font-medium">{employee.firstName} {employee.lastName}</p><p className="text-slate-500 text-xs">{employee.email}</p></td><td className="px-4 py-3">{employee.department}</td><td className="px-4 py-3">{employee.country}</td><td className="px-4 py-3">{formatCurrency(employee.netSalary, employee.currency)}</td><td className="px-4 py-3">{employee.status}</td><td className="px-4 py-3"><div className="flex gap-3"><button onClick={() => setFormEmployee(employee)} className="text-slate-700 hover:underline">Edit</button><button disabled={removing === employee.id} onClick={() => void remove(employee)} className="text-rose-700 disabled:opacity-50 hover:underline">{removing === employee.id ? "Removing…" : "Remove"}</button></div></td></tr>)}</tbody></table></div><div className="flex justify-between items-center"><p className="text-slate-500 text-sm">Showing {paged.length} of {filtered.length} employees</p><div className="flex items-center gap-2"><button aria-label="Previous page" className="disabled:opacity-50 px-3 py-2 border rounded text-sm" disabled={currentPage <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Prev</button><span className="font-medium text-sm">Page {currentPage} / {totalPages}</span><button aria-label="Next page" className="disabled:opacity-50 px-3 py-2 border rounded text-sm" disabled={currentPage >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>Next</button></div></div></div>;
 }

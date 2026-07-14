@@ -1,33 +1,20 @@
-import { NextResponse } from "next/server";
-import { createEmployee, listEmployees } from "@/services/employeeService";
+import { failure, success } from "@/lib/api-response";
 import { employeeSchema } from "@/lib/validation";
+import { createEmployee, listEmployees } from "@/services/employeeService";
 
 export async function GET() {
-    const employees = await listEmployees();
-
-    return NextResponse.json({
-        success: true,
-        data: employees,
-    });
+  try {
+    return success(await listEmployees());
+  } catch (error) {
+    return failure(error, "Unable to load employees");
+  }
 }
 
 export async function POST(request: Request) {
-    try {
-        const payload = await request.json();
-        const employee = employeeSchema.parse(payload);
-        const created = await createEmployee(employee);
-
-        return NextResponse.json(
-            { success: true, data: created },
-            { status: 201 },
-        );
-    } catch (error) {
-        return NextResponse.json(
-            {
-                success: false,
-                error: error instanceof Error ? error.message : "Invalid request",
-            },
-            { status: 400 },
-        );
-    }
+  try {
+    const employee = await createEmployee(employeeSchema.parse(await request.json()));
+    return success(employee, { status: 201 });
+  } catch (error) {
+    return failure(error, "Unable to create employee");
+  }
 }

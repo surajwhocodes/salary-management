@@ -1,6 +1,6 @@
 import type { AnalyticsPoint, Employee, EmployeeSummary } from "@/types/employee";
 import { employeeSchema } from "@/lib/validation";
-import { SupabaseEmployeeRepository, type EmployeeRepository } from "@/repositories/employeeRepository";
+import { getEmployeeRepository, type EmployeeRepository } from "@/repositories/employeeRepository";
 
 interface PaginatedEmployees {
     items: Employee[];
@@ -23,7 +23,7 @@ export interface EmployeeService {
     getInsights: () => Promise<string[]>;
 }
 
-export function createEmployeeService(repository: EmployeeRepository = new SupabaseEmployeeRepository()): EmployeeService {
+export function createEmployeeService(repository: EmployeeRepository = getEmployeeRepository()): EmployeeService {
     const listEmployees = async (): Promise<Employee[]> => repository.list();
     const getEmployee = async (id: string): Promise<Employee | undefined> => repository.get(id);
     const createEmployee = async (input: unknown): Promise<Employee> => {

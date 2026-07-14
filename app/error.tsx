@@ -7,6 +7,7 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  void error;
   return (
     <main className="flex flex-col gap-4 mx-auto p-10 max-w-2xl">
       <p className="font-medium text-slate-500 text-sm uppercase tracking-[0.2em]">

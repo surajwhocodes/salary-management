@@ -1,24 +1,26 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { createSupabaseServerClient, AUTH_COOKIE_NAME } from "@/lib/supabase";
+import { NextResponse, type NextRequest } from "next/server";
+import { updateAuthSession } from "@/lib/supabase";
 
-const protectedRoutes = ["/employees", "/analytics"];
+const protectedRoutes = ["/employees", "/analytics", "/account", "/api/employees", "/api/dashboard"];
 
-export function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl;
-    const session = createSupabaseServerClient(request.headers.get("cookie")).getSession();
+export async function middleware(request: NextRequest) {
+  const result = await updateAuthSession(request);
+  if (result instanceof NextResponse) {
+    return result;
+  }
 
-    if (protectedRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
-        if (!session) {
-            const loginUrl = new URL("/login", request.url);
-            loginUrl.searchParams.set("redirectTo", pathname);
-            return NextResponse.redirect(loginUrl);
-        }
-    }
+  const isProtected = protectedRoutes.some(
+    (route) => request.nextUrl.pathname === route || request.nextUrl.pathname.startsWith(`${route}/`),
+  );
+  if (isProtected && !result.user) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
-    return NextResponse.next();
+  return result.response;
 }
 
 export const config = {
-    matcher: ["/employees/:path*", "/analytics/:path*"],
+  matcher: ["/employees/:path*", "/analytics/:path*", "/account/:path*", "/api/employees/:path*", "/api/dashboard/:path*"],
 };

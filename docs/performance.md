@@ -13,6 +13,7 @@
 - Introduce server-side caching for dashboard summaries
 - Lazy load charts and heavy UI sections
 - Prefer aggregate SQL queries for analytics and insights
+- Keep the local demo repository intentionally bounded; production records live in Supabase
 
 ## Monitoring
 

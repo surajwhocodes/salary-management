@@ -1,105 +1,61 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient, createServerClient } from "@supabase/ssr";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-export const AUTH_COOKIE_NAME = "northstar-auth";
+export const AUTH_COOKIE_NAME = "sb-access-token";
 
-export interface SupabaseUser {
-    id: string;
-    email: string;
-    role: string;
+export function hasSupabaseConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  return Boolean(url && key && !url.includes("placeholder"));
 }
 
-export interface SupabaseSession {
-    accessToken: string;
-    user: SupabaseUser;
+export function getSupabaseBrowserClient() {
+  if (!hasSupabaseConfig()) {
+    return null;
+  }
+
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
 }
 
-export interface SupabaseAuthClient {
-    signInWithPassword: (input: { email: string; password: string }) => Promise<{ error?: { message: string }; session?: SupabaseSession }>;
-    signOut: () => Promise<void>;
-    getSession: () => Promise<SupabaseSession | null>;
+export function getSupabaseServerClient() {
+  if (!hasSupabaseConfig()) {
+    return null;
+  }
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => [], setAll: () => undefined } },
+  );
 }
 
-export function getSupabaseConfig() {
-    return {
-        url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-        anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-    };
-}
+export async function updateAuthSession(request: NextRequest) {
+  if (!hasSupabaseConfig()) {
+    return NextResponse.next({ request });
+  }
 
-export function getSupabaseClient() {
-    const { url, anonKey } = getSupabaseConfig();
-    if (!url || !anonKey || url.includes("placeholder")) {
-        return null;
-    }
-
-    return createClient(url, anonKey, {
-        auth: {
-            persistSession: false,
-            autoRefreshToken: false,
+  let response = NextResponse.next({ request });
+  const client = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookies) => {
+          cookies.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          cookies.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
         },
-    });
-}
+      },
+    },
+  );
 
-export async function createSupabaseBrowserClient(): Promise<SupabaseAuthClient> {
-    const client = getSupabaseClient();
-    if (!client) {
-        return {
-            async signInWithPassword() {
-                return { error: { message: "Supabase is not configured yet." } };
-            },
-            async signOut() {
-                return undefined;
-            },
-            async getSession() {
-                return null;
-            },
-        };
-    }
-
-    return {
-        async signInWithPassword({ email, password }) {
-            const { data, error } = await client.auth.signInWithPassword({ email, password });
-            if (error || !data.session) {
-                return { error: { message: error?.message ?? "Unable to sign in" } };
-            }
-
-            return {
-                session: {
-                    accessToken: data.session.access_token,
-                    user: {
-                        id: data.user?.id ?? "",
-                        email: data.user?.email ?? email,
-                        role: data.user?.role ?? "HR Manager",
-                    },
-                },
-            };
-        },
-        async signOut() {
-            await client.auth.signOut();
-        },
-        async getSession() {
-            const { data } = await client.auth.getSession();
-            if (!data.session) {
-                return null;
-            }
-
-            return {
-                accessToken: data.session.access_token,
-                user: {
-                    id: data.user?.id ?? "",
-                    email: data.user?.email ?? "",
-                    role: data.user?.role ?? "HR Manager",
-                },
-            };
-        },
-    };
-}
-
-export async function createSupabaseServerClient() {
-    const client = getSupabaseClient();
-    if (!client) {
-        return null;
-    }
-
-    return client;
+  const { data } = await client.auth.getUser();
+  return { response, user: data.user };
 }

@@ -50,11 +50,11 @@ flowchart LR
 
 - Vercel hosts the Next.js app
 - Supabase provides auth and PostgreSQL persistence
-- Local seed data powers development and demos when remote credentials are absent
+- A deterministic in-memory demo adapter powers development when Supabase credentials are absent
 
 ## Architecture Decisions
 
 - Use a service layer to keep business workflows testable and independent from UI
 - Use repositories to abstract persistence so the same domain logic can work with demo data or Supabase
 - Use Zod validation at the service boundary for forms, imports, and API payloads
-- Favor pagination, filtering, and server-friendly queries over loading everything into memory
+- Route UI data access through typed API handlers; the Supabase adapter owns persistence mapping

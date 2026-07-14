@@ -68,3 +68,31 @@ create index if not exists idx_employees_department_id on employees(department_i
 create index if not exists idx_employees_country_id on employees(country_id);
 create index if not exists idx_salary_records_employee_id on salary_records(employee_id);
 create index if not exists idx_salary_components_employee_id on salary_components(employee_id);
+create index if not exists idx_employees_status on employees(status);
+create index if not exists idx_employees_last_updated on employees(last_updated desc);
+create index if not exists idx_audit_logs_entity on audit_logs(entity_type, entity_id, created_at desc);
+
+alter table countries enable row level security;
+alter table departments enable row level security;
+alter table employees enable row level security;
+alter table salary_records enable row level security;
+alter table salary_components enable row level security;
+alter table users enable row level security;
+alter table audit_logs enable row level security;
+
+create policy "authenticated users can read HR data" on countries for select to authenticated using (true);
+create policy "authenticated users can read departments" on departments for select to authenticated using (true);
+create policy "authenticated users can read employees" on employees for select to authenticated using (true);
+create policy "authenticated users can read salary records" on salary_records for select to authenticated using (true);
+create policy "authenticated users can read salary components" on salary_components for select to authenticated using (true);
+
+create policy "HR managers can manage reference data" on countries for all to authenticated
+using (coalesce(auth.jwt() -> 'user_metadata' ->> 'role', 'HR Manager') in ('Admin', 'HR Manager'))
+with check (coalesce(auth.jwt() -> 'user_metadata' ->> 'role', 'HR Manager') in ('Admin', 'HR Manager'));
+create policy "HR managers can manage departments" on departments for all to authenticated
+using (coalesce(auth.jwt() -> 'user_metadata' ->> 'role', 'HR Manager') in ('Admin', 'HR Manager'))
+with check (coalesce(auth.jwt() -> 'user_metadata' ->> 'role', 'HR Manager') in ('Admin', 'HR Manager'));
+
+create policy "HR managers can manage employees" on employees for all to authenticated
+using (coalesce(auth.jwt() -> 'user_metadata' ->> 'role', 'HR Manager') in ('Admin', 'HR Manager'))
+with check (coalesce(auth.jwt() -> 'user_metadata' ->> 'role', 'HR Manager') in ('Admin', 'HR Manager'));

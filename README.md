@@ -15,12 +15,18 @@ Northstar Salary Management is a startup-grade HR platform for managing employee
 ## Setup
 
 1. Install dependencies with npm install
-2. Run npm run dev
-3. Visit http://localhost:3000
+2. Copy `.env.local.example` to `.env.local` and add Supabase credentials (optional for demo mode)
+3. Run npm run dev
+4. Visit http://localhost:3000
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
 
 ## Development
 
-- npm run seed seeds demo employees
+- npm run seed creates or updates 10,000 realistic Supabase employee records
 - npm run test runs Vitest
 - npm run lint runs ESLint
 
@@ -28,11 +34,13 @@ Northstar Salary Management is a startup-grade HR platform for managing employee
 
 - Unit tests cover the employee service
 - Validation and domain logic remain isolated from UI components
+- `npx tsc --noEmit` verifies the strict TypeScript boundary
 
 ## Deployment
 
 - Deploy the app to Vercel
-- Set environment variables for Supabase or other data providers when ready
+- Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Run `supabase/schema.sql` in the Supabase SQL editor, then run `npm run seed`
 
 ## Tradeoffs
 
@@ -41,9 +49,8 @@ Northstar Salary Management is a startup-grade HR platform for managing employee
 
 ## Future Improvements
 
-- Supabase auth and RLS integration
 - Prisma schema and migration workflow
-- CSV import/export flows and audit log persistence
+- CSV import workflows and audit-log persistence
 - Role-based access control expansion
 
 ## AI Usage
