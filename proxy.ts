@@ -3,7 +3,7 @@ import { updateAuthSession } from "@/lib/supabase";
 
 const protectedRoutes = ["/employees", "/analytics", "/account", "/api/employees", "/api/dashboard"];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const result = await updateAuthSession(request);
   if (result instanceof NextResponse) {
     return result;
