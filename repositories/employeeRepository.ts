@@ -2,7 +2,7 @@ import type { Employee } from "@/types/employee";
 import { getSupabaseServerClient, hasSupabaseConfig } from "@/lib/supabase";
 
 export interface EmployeeRepository {
-  list(): Promise<Employee[]>;
+  list(options?: { page?: number; limit?: number }): Promise<Employee[] | { items: Employee[]; total: number }>;
   get(id: string): Promise<Employee | undefined>;
   create(input: Employee): Promise<Employee>;
   update(id: string, input: Partial<Employee>): Promise<Employee | undefined>;
@@ -50,7 +50,17 @@ function createDemoEmployees(): Employee[] {
 class DemoEmployeeRepository implements EmployeeRepository {
   private readonly employees = createDemoEmployees();
 
-  async list() { return [...this.employees]; }
+  async list(options?: { page?: number; limit?: number }) {
+    if (options?.page && options?.limit) {
+      const start = (options.page - 1) * options.limit;
+      const end = start + options.limit;
+      return {
+        items: this.employees.slice(start, end),
+        total: this.employees.length,
+      };
+    }
+    return [...this.employees];
+  }
   async get(id: string) { return this.employees.find((employee) => employee.id === id); }
   async create(input: Employee) {
     const employee = { ...input, id: input.id || `demo-${Date.now()}` };
@@ -112,12 +122,33 @@ export class SupabaseEmployeeRepository implements EmployeeRepository {
     };
     return partial ? row : row;
   }
-  async list() {
+  async list(options?: { page?: number; limit?: number }) {
     const client = getSupabaseServerClient();
     if (!client) return [];
-    const { data, error } = await client.from("employees").select("*, departments(name), countries(name, currency)").order("last_updated", { ascending: false });
+    
+    let query = client
+      .from("employees")
+      .select("*, departments(name), countries(name, currency)", { count: "exact" })
+      .order("last_updated", { ascending: false });
+
+    if (options?.page && options?.limit) {
+      const start = (options.page - 1) * options.limit;
+      const end = start + options.limit - 1;
+      query = query.range(start, end);
+    }
+
+    const { data, error, count } = await query;
     if (error || !data) throw new Error(error?.message ?? "Unable to load employees");
-    return (data as unknown as Record<string, unknown>[]).map(toEmployee);
+    
+    const items = (data as unknown as Record<string, unknown>[]).map(toEmployee);
+    
+    if (options?.page && options?.limit) {
+      return {
+        items,
+        total: count ?? 0,
+      };
+    }
+    return items;
   }
   async get(id: string) {
     const client = getSupabaseServerClient();

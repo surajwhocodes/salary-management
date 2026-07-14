@@ -10,8 +10,10 @@ interface PaginatedEmployees {
     totalItems: number;
 }
 
+export type PagedEmployees = { items: Employee[]; total: number };
+
 export interface EmployeeService {
-    listEmployees: () => Promise<Employee[]>;
+    listEmployees: (options?: { page?: number; limit?: number }) => Promise<Employee[] | PagedEmployees>;
     getEmployee: (id: string) => Promise<Employee | undefined>;
     createEmployee: (input: unknown) => Promise<Employee>;
     updateEmployee: (id: string, input: unknown) => Promise<Employee | undefined>;
@@ -24,7 +26,23 @@ export interface EmployeeService {
 }
 
 export function createEmployeeService(repository: EmployeeRepository = getEmployeeRepository()): EmployeeService {
-    const listEmployees = async (): Promise<Employee[]> => repository.list();
+    const listEmployees = async (options?: { page?: number; limit?: number }): Promise<Employee[] | PagedEmployees> => {
+        const result = await repository.list(options);
+        if (options?.page && options?.limit) {
+            if (Array.isArray(result)) {
+                const start = (options.page - 1) * options.limit;
+                return {
+                    items: result.slice(start, start + options.limit),
+                    total: result.length,
+                };
+            }
+            return result as PagedEmployees;
+        }
+        if (Array.isArray(result)) {
+            return result;
+        }
+        return (result as PagedEmployees).items;
+    };
     const getEmployee = async (id: string): Promise<Employee | undefined> => repository.get(id);
     const createEmployee = async (input: unknown): Promise<Employee> => {
         const parsed = employeeSchema.parse(input);

@@ -1,10 +1,27 @@
 import { failure, success } from "@/lib/api-response";
 import { employeeSchema } from "@/lib/validation";
-import { createEmployee, listEmployees } from "@/services/employeeService";
+import { createEmployee, listEmployees, searchEmployees } from "@/services/employeeService";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    return success(await listEmployees());
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.get("page") ? Number(searchParams.get("page")) : undefined;
+    const limit = searchParams.get("limit") ? Number(searchParams.get("limit")) : undefined;
+    const query = searchParams.get("q") || "";
+
+    if (query) {
+      const results = await searchEmployees(query);
+      if (page && limit) {
+        const start = (page - 1) * limit;
+        return success({
+          items: results.slice(start, start + limit),
+          total: results.length,
+        });
+      }
+      return success(results);
+    }
+
+    return success(await listEmployees({ page, limit }));
   } catch (error) {
     return failure(error, "Unable to load employees");
   }

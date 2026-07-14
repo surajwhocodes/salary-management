@@ -1,4 +1,5 @@
 import type { AnalyticsPoint, Employee, EmployeeSummary } from "@/types/employee";
+import type { PagedEmployees } from "@/services/employeeService";
 
 type ApiResponse<T> = { success: true; data: T } | { success: false; error: string };
 
@@ -18,7 +19,15 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export const employeeApi = {
-  list: () => request<Employee[]>("/api/employees"),
+  list: (options?: { page?: number; limit?: number; q?: string }) => {
+    const params = new URLSearchParams();
+    if (options?.page) params.set("page", String(options.page));
+    if (options?.limit) params.set("limit", String(options.limit));
+    if (options?.q) params.set("q", options.q);
+    const queryStr = params.toString();
+    const url = `/api/employees${queryStr ? `?${queryStr}` : ""}`;
+    return request<Employee[] | PagedEmployees>(url);
+  },
   create: (input: Omit<Employee, "id">) => request<Employee>("/api/employees", { method: "POST", body: JSON.stringify(input) }),
   update: (id: string, input: Partial<Employee>) => request<Employee>(`/api/employees/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
   remove: (id: string) => request<void>(`/api/employees/${id}`, { method: "DELETE" }),
