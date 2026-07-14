@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,16 @@ const palette = ["#2563eb", "#14b8a6", "#f59e0b", "#8b5cf6", "#ef4444", "#0f766e
 export function DashboardShell() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => { void dashboardApi.get().then(setData).catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Unable to load dashboard")); }, []);
+  const router = useRouter();
+  useEffect(() => {
+    void dashboardApi.get().then(setData).catch((reason: unknown) => {
+      if (reason instanceof Error && reason.message === "Authentication required") {
+        router.replace("/login?redirectTo=/");
+        return;
+      }
+      setError(reason instanceof Error ? reason.message : "Unable to load dashboard");
+    });
+  }, [router]);
 
   if (error) return <div role="alert" className="bg-rose-50 p-4 border border-rose-200 rounded-xl text-rose-800">{error}</div>;
   if (!data) return <div className="animate-pulse space-y-6"><div className="bg-slate-200 rounded h-12 w-64" /><div className="gap-4 grid md:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="bg-slate-200 rounded-xl h-32" />)}</div></div>;

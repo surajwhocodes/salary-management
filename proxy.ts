@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateAuthSession } from "@/lib/supabase";
 
-const protectedRoutes = ["/employees", "/analytics", "/account", "/api/employees", "/api/dashboard"];
+const protectedRoutes = ["/", "/employees", "/analytics", "/account", "/api/employees", "/api/dashboard"];
 
 export async function proxy(request: NextRequest) {
   const result = await updateAuthSession(request);
@@ -22,5 +22,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/employees/:path*", "/analytics/:path*", "/account/:path*", "/api/employees/:path*", "/api/dashboard/:path*"],
+  matcher: ["/", "/employees/:path*", "/analytics/:path*", "/account/:path*", "/api/employees/:path*", "/api/dashboard/:path*"],
 };

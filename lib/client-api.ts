@@ -5,6 +5,13 @@ type ApiResponse<T> = { success: true; data: T } | { success: false; error: stri
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...init, headers: { "Content-Type": "application/json", ...init?.headers } });
   if (response.status === 204) return undefined as T;
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    if (response.redirected || response.url.includes("/login")) {
+      throw new Error("Authentication required");
+    }
+    throw new Error("The server returned an unexpected response.");
+  }
   const body = await response.json() as ApiResponse<T>;
   if (!response.ok || !body.success) throw new Error(body.success ? "Request failed" : body.error);
   return body.data;
