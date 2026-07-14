@@ -1,6 +1,14 @@
 import type { AnalyticsPoint, Employee, EmployeeSummary } from "@/types/employee";
 import { employeeSchema } from "@/lib/validation";
 
+interface PaginatedEmployees {
+    items: Employee[];
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    totalItems: number;
+}
+
 const employeeSeed: Employee[] = [
     {
         id: "emp-001",
@@ -67,7 +75,7 @@ const employeeSeed: Employee[] = [
 const employeeStore: Employee[] = [...employeeSeed];
 
 export function listEmployees(): Employee[] {
-    return employeeStore;
+    return [...employeeStore];
 }
 
 export function getEmployee(id: string): Employee | undefined {
@@ -97,6 +105,59 @@ export function deleteEmployee(id: string): boolean {
     if (index < 0) return false;
     employeeStore.splice(index, 1);
     return true;
+}
+
+export function searchEmployees(query: string): Employee[] {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return listEmployees();
+
+    return listEmployees().filter((employee) => {
+        const haystack = `${employee.firstName} ${employee.lastName} ${employee.department} ${employee.country} ${employee.email}`.toLowerCase();
+        return haystack.includes(normalized);
+    });
+}
+
+export function paginateEmployees(items: Employee[], page: number, pageSize: number): PaginatedEmployees {
+    const safePage = Math.max(1, page);
+    const safeSize = Math.max(1, pageSize);
+    const totalItems = items.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / safeSize));
+    const currentPage = Math.min(safePage, totalPages);
+    const startIndex = (currentPage - 1) * safeSize;
+    const endIndex = startIndex + safeSize;
+
+    return {
+        items: items.slice(startIndex, endIndex),
+        page: currentPage,
+        pageSize: safeSize,
+        totalPages,
+        totalItems,
+    };
+}
+
+export function exportEmployeesCsv(items: Employee[]): string {
+    const headers = ["employeeId", "firstName", "lastName", "email", "department", "country", "netSalary", "status"];
+    const rows = items.map((employee) => [employee.employeeId, employee.firstName, employee.lastName, employee.email, employee.department, employee.country, employee.netSalary.toString(), employee.status]);
+
+    return [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+}
+
+export function applyBulkSalaryUpdate(input: { department?: string; country?: string; percentage: number }): number {
+    const parsed = { department: input.department, country: input.country, percentage: input.percentage };
+    let updatedCount = 0;
+
+    employeeStore.forEach((employee) => {
+        const matchesDepartment = !parsed.department || employee.department === parsed.department;
+        const matchesCountry = !parsed.country || employee.country === parsed.country;
+        if (matchesDepartment && matchesCountry) {
+            employee.baseSalary = Math.round(employee.baseSalary * (1 + parsed.percentage / 100));
+            employee.netSalary = Math.round(employee.netSalary * (1 + parsed.percentage / 100));
+            employee.lastUpdated = new Date().toISOString().slice(0, 10);
+            updatedCount += 1;
+        }
+    });
+
+    return updatedCount;
 }
 
 export function getEmployeeSummary(): EmployeeSummary {

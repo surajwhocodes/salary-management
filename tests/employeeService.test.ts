@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { createEmployee, deleteEmployee, getEmployeeSummary, listEmployees } from "@/services/employeeService";
+import {
+    applyBulkSalaryUpdate,
+    createEmployee,
+    deleteEmployee,
+    exportEmployeesCsv,
+    getEmployeeSummary,
+    listEmployees,
+    paginateEmployees,
+    searchEmployees,
+} from "@/services/employeeService";
 
 describe("employeeService", () => {
     it("creates and lists employees", () => {
@@ -40,5 +49,25 @@ describe("employeeService", () => {
         const deleted = deleteEmployee(lastEmployee.id);
         expect(deleted).toBe(true);
         expect(listEmployees()).toHaveLength(initialCount - 1);
+    });
+
+    it("filters and paginates employees for HR workflows", () => {
+        const filtered = searchEmployees("engineering");
+        expect(filtered.length).toBeGreaterThan(0);
+        const page = paginateEmployees(filtered, 1, 2);
+        expect(page.items).toHaveLength(2);
+        expect(page.page).toBe(1);
+        expect(page.totalPages).toBeGreaterThan(0);
+    });
+
+    it("exports employee rows as csv and applies bulk updates", () => {
+        const csv = exportEmployeesCsv(listEmployees());
+        expect(csv).toContain("employeeId");
+        expect(csv).toContain("firstName");
+
+        const updated = applyBulkSalaryUpdate({ department: "Engineering", percentage: 5 });
+        expect(updated).toBeGreaterThan(0);
+        const engineering = searchEmployees("engineering");
+        expect(engineering.some((employee) => employee.baseSalary > 0)).toBe(true);
     });
 });

@@ -16,6 +16,8 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  LineChart,
+  Line,
 } from "recharts";
 
 const palette = ["#2563eb", "#14b8a6", "#f59e0b", "#8b5cf6", "#ef4444"];
@@ -140,23 +142,39 @@ export function DashboardShell() {
 
         <Card>
           <CardHeader>
-            <CardTitle>AI Insights</CardTitle>
+            <CardTitle>Compensation Trend</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {insights.map((insight) => (
-              <div
-                key={insight}
-                className="bg-slate-50 p-3 border rounded-lg text-slate-700 text-sm"
-              >
-                {insight}
-              </div>
-            ))}
-            <p className="text-slate-500 text-sm">
-              {employees.length} employees loaded in the demo data layer.
-            </p>
+          <CardContent className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={summary.recentSalaryChanges.slice(0, 5)}>
+                <XAxis dataKey="employeeId" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="delta" stroke="#14b8a6" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>AI Insights</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {insights.map((insight) => (
+            <div
+              key={insight}
+              className="bg-slate-50 p-3 border rounded-lg text-slate-700 text-sm"
+            >
+              {insight}
+            </div>
+          ))}
+          <p className="text-slate-500 text-sm">
+            {employees.length} employees loaded in the demo data layer.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

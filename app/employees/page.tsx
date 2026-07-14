@@ -1,57 +1,26 @@
 import Link from "next/link";
 import { listEmployees } from "@/services/employeeService";
-import { formatCurrency } from "@/utils/format";
+import { EmployeeViews } from "@/features/employee-views";
 
 export default function EmployeesPage() {
   const employees = listEmployees();
 
   return (
-    <main className="flex flex-col gap-6 mx-auto p-8 max-w-7xl">
-      <div className="flex justify-between items-center">
+    <main className="mx-auto flex max-w-7xl flex-col gap-6 p-8">
+      <div className="flex items-center justify-between">
         <div>
-          <p className="font-medium text-slate-500 text-sm uppercase tracking-[0.2em]">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">
             Talent operations
           </p>
-          <h1 className="font-semibold text-3xl">Employees</h1>
+          <h1 className="text-3xl font-semibold">Employees</h1>
         </div>
-        <Link
-          href="/"
-          className="px-4 py-2 border rounded-lg font-medium text-sm"
-        >
+        <Link href="/" className="rounded-lg border px-4 py-2 text-sm font-medium">
           Back to dashboard
         </Link>
       </div>
 
-      <div className="bg-white shadow-sm border rounded-xl overflow-hidden">
-        <table className="divide-y divide-slate-200 min-w-full text-sm">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-4 py-3 font-semibold text-left">Employee</th>
-              <th className="px-4 py-3 font-semibold text-left">Department</th>
-              <th className="px-4 py-3 font-semibold text-left">Country</th>
-              <th className="px-4 py-3 font-semibold text-left">Net Salary</th>
-              <th className="px-4 py-3 font-semibold text-left">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {employees.map((employee) => (
-              <tr key={employee.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3">
-                  <p className="font-medium">
-                    {employee.firstName} {employee.lastName}
-                  </p>
-                  <p className="text-slate-500 text-xs">{employee.email}</p>
-                </td>
-                <td className="px-4 py-3">{employee.department}</td>
-                <td className="px-4 py-3">{employee.country}</td>
-                <td className="px-4 py-3">
-                  {formatCurrency(employee.netSalary, employee.currency)}
-                </td>
-                <td className="px-4 py-3">{employee.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <EmployeeViews employees={employees} />
       </div>
     </main>
   );
