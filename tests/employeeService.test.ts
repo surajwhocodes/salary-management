@@ -68,6 +68,6 @@ describe("employeeService", () => {
         const updated = applyBulkSalaryUpdate({ department: "Engineering", percentage: 5 });
         expect(updated).toBeGreaterThan(0);
         const engineering = searchEmployees("engineering");
-        expect(engineering.some((employee) => employee.baseSalary > 0)).toBe(true);
+        expect(engineering.some((employee: { baseSalary: number }) => employee.baseSalary > 0)).toBe(true);
     });
 });

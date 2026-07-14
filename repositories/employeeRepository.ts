@@ -1,51 +1,78 @@
 import type { Employee } from "@/types/employee";
+import { getSupabaseClient } from "@/lib/supabase";
 
 export interface EmployeeRepository {
-  list(): Employee[];
-  get(id: string): Employee | undefined;
-  create(input: Employee): Employee;
-  update(id: string, input: Partial<Employee>): Employee | undefined;
-  delete(id: string): boolean;
+    list(): Promise<Employee[]>;
+    get(id: string): Promise<Employee | undefined>;
+    create(input: Employee): Promise<Employee>;
+    update(id: string, input: Partial<Employee>): Promise<Employee | undefined>;
+    delete(id: string): Promise<boolean>;
 }
 
-export class InMemoryEmployeeRepository implements EmployeeRepository {
-  private readonly store: Employee[];
+export class SupabaseEmployeeRepository implements EmployeeRepository {
+    async list() {
+        const client = getSupabaseClient();
+        if (!client) {
+            return [];
+        }
 
-  constructor(initial: Employee[] = []) {
-    this.store = [...initial];
-  }
+        const { data, error } = await client.from("employees").select("*");
+        if (error || !data) {
+            return [];
+        }
 
-  list() {
-    return [...this.store];
-  }
-
-  get(id: string) {
-    return this.store.find((employee) => employee.id === id);
-  }
-
-  create(input: Employee) {
-    this.store.push(input);
-    return { ...input };
-  }
-
-  update(id: string, input: Partial<Employee>) {
-    const index = this.store.findIndex((employee) => employee.id === id);
-    if (index < 0) {
-      return undefined;
+        return data as Employee[];
     }
 
-    const updated = { ...this.store[index], ...input };
-    this.store[index] = updated;
-    return updated;
-  }
+    async get(id: string) {
+        const client = getSupabaseClient();
+        if (!client) {
+            return undefined;
+        }
 
-  delete(id: string) {
-    const index = this.store.findIndex((employee) => employee.id === id);
-    if (index < 0) {
-      return false;
+        const { data, error } = await client.from("employees").select("*").eq("id", id).maybeSingle();
+        if (error || !data) {
+            return undefined;
+        }
+
+        return data as Employee;
     }
 
-    this.store.splice(index, 1);
-    return true;
-  }
+    async create(input: Employee) {
+        const client = getSupabaseClient();
+        if (!client) {
+            return input;
+        }
+
+        const { data, error } = await client.from("employees").insert(input).select().single();
+        if (error || !data) {
+            return input;
+        }
+
+        return data as Employee;
+    }
+
+    async update(id: string, input: Partial<Employee>) {
+        const client = getSupabaseClient();
+        if (!client) {
+            return undefined;
+        }
+
+        const { data, error } = await client.from("employees").update(input).eq("id", id).select().single();
+        if (error || !data) {
+            return undefined;
+        }
+
+        return data as Employee;
+    }
+
+    async delete(id: string) {
+        const client = getSupabaseClient();
+        if (!client) {
+            return false;
+        }
+
+        const { error } = await client.from("employees").delete().eq("id", id);
+        return !error;
+    }
 }

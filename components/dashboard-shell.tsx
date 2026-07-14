@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   listEmployees,
@@ -23,9 +26,29 @@ import {
 const palette = ["#2563eb", "#14b8a6", "#f59e0b", "#8b5cf6", "#ef4444"];
 
 export function DashboardShell() {
-  const employees = listEmployees();
-  const summary = getEmployeeSummary();
-  const insights = getInsights();
+  const [employees, setEmployees] = useState<Awaited<ReturnType<typeof listEmployees>>>([]);
+  const [summary, setSummary] = useState<Awaited<ReturnType<typeof getEmployeeSummary>> | null>(null);
+  const [insights, setInsights] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      const [employeeData, summaryData, insightData] = await Promise.all([
+        listEmployees(),
+        getEmployeeSummary(),
+        getInsights(),
+      ]);
+
+      setEmployees(employeeData);
+      setSummary(summaryData);
+      setInsights(insightData);
+    }
+
+    void load();
+  }, []);
+
+  if (!summary) {
+    return <div className="text-sm text-slate-500">Loading payroll insights…</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -150,7 +173,12 @@ export function DashboardShell() {
                 <XAxis dataKey="employeeId" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="delta" stroke="#14b8a6" strokeWidth={2} />
+                <Line
+                  type="monotone"
+                  dataKey="delta"
+                  stroke="#14b8a6"
+                  strokeWidth={2}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -171,7 +199,7 @@ export function DashboardShell() {
             </div>
           ))}
           <p className="text-slate-500 text-sm">
-            {employees.length} employees loaded in the demo data layer.
+            {employees.length} employees loaded from the data layer.
           </p>
         </CardContent>
       </Card>
