@@ -88,7 +88,9 @@ describe("employeeService", () => {
             lastUpdated: "2026-07-14",
         });
 
-        const employees = await service.listEmployees();
+        const result = await service.listEmployees();
+        // Handle both array and paged result
+        const employees = Array.isArray(result) ? result : result.items;
 
         expect(employee.employeeId).toBe("E-9999");
         expect(employees.some((entry) => entry.id === employee.id)).toBe(true);
@@ -106,7 +108,9 @@ describe("employeeService", () => {
         const service = createEmployeeService(createTestRepository([createSeedEmployee("employee-1")]));
         const deleted = await service.deleteEmployee("employee-1");
         expect(deleted).toBe(true);
-        expect(await service.listEmployees()).toHaveLength(0);
+        const resultAfterDelete = await service.listEmployees();
+        const employeesAfterDelete = Array.isArray(resultAfterDelete) ? resultAfterDelete : resultAfterDelete.items;
+        expect(employeesAfterDelete).toHaveLength(0);
     });
 
     it("filters and paginates employees for HR workflows", async () => {
@@ -121,7 +125,9 @@ describe("employeeService", () => {
 
     it("exports employee rows as csv and applies bulk updates", async () => {
         const service = createEmployeeService(createTestRepository([createSeedEmployee("employee-1")]));
-        const employees = await service.listEmployees();
+        const result = await service.listEmployees();
+        // Handle both array and paged result
+        const employees = Array.isArray(result) ? result : result.items;
         const csv = exportEmployeesCsv(employees);
         expect(csv).toContain("employeeId");
         expect(csv).toContain("firstName");

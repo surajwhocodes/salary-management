@@ -55,7 +55,9 @@ export function createEmployeeService(repository: EmployeeRepository = getEmploy
     const deleteEmployee = async (id: string): Promise<boolean> => repository.delete(id);
     const searchEmployees = async (query: string): Promise<Employee[]> => {
         const normalized = query.trim().toLowerCase();
-        const employees = await listEmployees();
+        const result = await listEmployees();
+        // Ensure we have an array of employees
+        const employees = Array.isArray(result) ? result : result.items;
         if (!normalized) {
             return employees;
         }
@@ -66,7 +68,9 @@ export function createEmployeeService(repository: EmployeeRepository = getEmploy
         });
     };
     const applyBulkSalaryUpdate = async (input: { department?: string; country?: string; percentage: number }): Promise<number> => {
-        const employees = await listEmployees();
+        const result = await listEmployees();
+        // Ensure we have an array of employees
+        const employees = Array.isArray(result) ? result : result.items;
         const parsed = { department: input.department, country: input.country, percentage: input.percentage };
         let updatedCount = 0;
 
@@ -88,7 +92,9 @@ export function createEmployeeService(repository: EmployeeRepository = getEmploy
         return updatedCount;
     };
     const getEmployeeSummary = async (): Promise<EmployeeSummary> => {
-        const employees = await listEmployees();
+        const result = await listEmployees();
+        // Ensure we have an array of employees
+        const employees = Array.isArray(result) ? result : result.items;
         const totalEmployees = employees.length;
         const averageSalary = totalEmployees > 0 ? employees.reduce((sum, employee) => sum + employee.netSalary, 0) / totalEmployees : 0;
         const highestSalary = totalEmployees > 0 ? Math.max(...employees.map((employee) => employee.netSalary)) : 0;
@@ -125,7 +131,9 @@ export function createEmployeeService(repository: EmployeeRepository = getEmploy
         };
     };
     const getAnalytics = async (): Promise<AnalyticsPoint[]> => {
-        const employees = await listEmployees();
+        const result = await listEmployees();
+        // Ensure we have an array of employees
+        const employees = Array.isArray(result) ? result : result.items;
         const totals = employees.reduce<Record<string, number>>((acc, employee) => {
             acc[employee.department] = (acc[employee.department] || 0) + employee.netSalary;
             return acc;
@@ -134,7 +142,9 @@ export function createEmployeeService(repository: EmployeeRepository = getEmploy
         return Object.entries(totals).map(([label, value]) => ({ label, value }));
     };
     const getInsights = async (): Promise<string[]> => {
-        const employees = await listEmployees();
+        const result = await listEmployees();
+        // Ensure we have an array of employees
+        const employees = Array.isArray(result) ? result : result.items;
         const averageSalary = employees.length > 0 ? employees.reduce((sum, employee) => sum + employee.netSalary, 0) / employees.length : 0;
         const topCountry = Object.entries(
             employees.reduce<Record<string, number>>((acc, employee) => {
