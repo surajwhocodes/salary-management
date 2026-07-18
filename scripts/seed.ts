@@ -1,4 +1,7 @@
-import { getSupabaseServerClient } from "../lib/supabase";
+import { createServerClient } from "@supabase/ssr";
+
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const countries = [["United States", "USD"], ["India", "INR"], ["United Kingdom", "GBP"], ["Germany", "EUR"], ["Canada", "CAD"], ["Australia", "AUD"]] as const;
 const departments = ["Engineering", "Product", "Marketing", "Finance", "People", "Operations"];
@@ -6,14 +9,14 @@ const firstNames = ["Aisha", "Liam", "Maya", "Noah", "Priya", "Owen", "Sofia", "
 const lastNames = ["Shah", "Williams", "Müller", "Patel", "Chen", "Brown", "Singh", "Garcia", "Khan", "Taylor"];
 
 async function seed() {
-  const client = getSupabaseServerClient();
-  if (!client) throw new Error("Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY before seeding.");
+  if (!url || !key) throw new Error("Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY before seeding.");
+  const client = createServerClient(url, key, { cookies: { getAll: () => [], setAll: () => undefined } });
   const { data: countryRows, error: countryError } = await client.from("countries").upsert(countries.map(([name, currency]) => ({ name, currency })), { onConflict: "name" }).select("id, name");
   if (countryError || !countryRows) throw new Error(countryError?.message ?? "Unable to seed countries");
   const { data: departmentRows, error: departmentError } = await client.from("departments").upsert(departments.map((name) => ({ name })), { onConflict: "name" }).select("id, name");
   if (departmentError || !departmentRows) throw new Error(departmentError?.message ?? "Unable to seed departments");
-  const countryIds = new Map(countryRows.map((row) => [row.name, row.id]));
-  const departmentIds = new Map(departmentRows.map((row) => [row.name, row.id]));
+  const countryIds = new Map(countryRows.map((row: { name: string; id: unknown }) => [row.name, row.id]));
+  const departmentIds = new Map(departmentRows.map((row: { name: string; id: unknown }) => [row.name, row.id]));
   const employees = Array.from({ length: 10_000 }, (_, index) => {
     const [country, currency] = countries[index % countries.length]; const department = departments[index % departments.length];
     const baseSalary = 52000 + (index % 24) * 6000; const bonus = Math.round(baseSalary * (0.06 + (index % 5) * 0.01)); const allowance = 1200 + (index % 6) * 350; const tax = Math.round((baseSalary + bonus + allowance) * (0.17 + (index % 4) * 0.03));

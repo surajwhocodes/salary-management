@@ -97,7 +97,7 @@ function toEmployee(row: Record<string, unknown>): Employee {
 
 export class SupabaseEmployeeRepository implements EmployeeRepository {
   private async referenceId(table: "departments" | "countries", name: string, currency?: string) {
-    const client = getSupabaseServerClient();
+    const client = await getSupabaseServerClient();
     if (!client) throw new Error("Supabase is not configured");
     const { data: existing, error: lookupError } = await client.from(table).select("id").eq("name", name).maybeSingle();
     if (lookupError) throw new Error(lookupError.message);
@@ -122,10 +122,11 @@ export class SupabaseEmployeeRepository implements EmployeeRepository {
     };
     return partial ? row : row;
   }
+
   async list(options?: { page?: number; limit?: number }) {
-    const client = getSupabaseServerClient();
+    const client = await getSupabaseServerClient();
     if (!client) return [];
-    
+
     let query = client
       .from("employees")
       .select("*, departments(name), countries(name, currency)", { count: "exact" })
@@ -139,36 +140,36 @@ export class SupabaseEmployeeRepository implements EmployeeRepository {
 
     const { data, error, count } = await query;
     if (error || !data) throw new Error(error?.message ?? "Unable to load employees");
-    
+
     const items = (data as unknown as Record<string, unknown>[]).map(toEmployee);
-    
+
     if (options?.page && options?.limit) {
-      return {
-        items,
-        total: count ?? 0,
-      };
+      return { items, total: count ?? 0 };
     }
     return items;
   }
+
   async get(id: string) {
-    const client = getSupabaseServerClient();
+    const client = await getSupabaseServerClient();
     if (!client) return undefined;
     const { data, error } = await client.from("employees").select("*, departments(name), countries(name, currency)").eq("id", id).maybeSingle();
     if (error) throw new Error(error.message);
     return data ? toEmployee(data as unknown as Record<string, unknown>) : undefined;
   }
+
   async create(input: Employee): Promise<Employee> {
-    const client = getSupabaseServerClient();
+    const client = await getSupabaseServerClient();
     if (!client) throw new Error("Supabase is not configured");
     const row = await this.writeRow(input);
     const { data, error } = await client.from("employees").insert(row).select("*, departments(name), countries(name, currency)").single();
     if (error || !data) throw new Error(error?.message ?? "Unable to create employee");
     return toEmployee(data as unknown as Record<string, unknown>);
   }
+
   async update(id: string, input: Partial<Employee>): Promise<Employee | undefined> {
     const existing = await this.get(id);
     if (!existing) return undefined;
-    const client = getSupabaseServerClient();
+    const client = await getSupabaseServerClient();
     if (!client) throw new Error("Supabase is not configured");
     const merged = { ...existing, ...input, id };
     const row = await this.writeRow(merged, true);
@@ -176,8 +177,9 @@ export class SupabaseEmployeeRepository implements EmployeeRepository {
     if (error) throw new Error(error.message);
     return data ? toEmployee(data as unknown as Record<string, unknown>) : undefined;
   }
+
   async delete(id: string) {
-    const client = getSupabaseServerClient();
+    const client = await getSupabaseServerClient();
     if (!client) return false;
     const { error } = await client.from("employees").delete().eq("id", id);
     if (error) throw new Error(error.message);

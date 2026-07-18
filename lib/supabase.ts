@@ -21,15 +21,35 @@ export function getSupabaseBrowserClient() {
   );
 }
 
-export function getSupabaseServerClient() {
+export async function getSupabaseServerClient() {
   if (!hasSupabaseConfig()) {
     return null;
   }
 
+  // Lazy-import so this module can be loaded outside a Next.js request context
+  // (tests, seed scripts) without triggering the "next/headers" Pages Router error.
+  // The import only resolves when this function is actually called inside an
+  // App Router request handler where the cookies store is available.
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => [], setAll: () => undefined } },
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (cookiesToSet) => {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options),
+            );
+          } catch {
+            // Called from a Server Component — safe to ignore
+          }
+        },
+      },
+    },
   );
 }
 
@@ -45,10 +65,10 @@ export async function updateAuthSession(request: NextRequest) {
     {
       cookies: {
         getAll: () => request.cookies.getAll(),
-        setAll: (cookies) => {
-          cookies.forEach(({ name, value }) => request.cookies.set(name, value));
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
-          cookies.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options),
           );
         },
